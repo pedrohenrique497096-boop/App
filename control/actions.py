@@ -1,8 +1,10 @@
 def executar(dados):
     print("\n===== DECISÃO DA IA =====")
-    print(f"Direção: {dados['direcao']}")
+    print(f"Direção: {dados.get('direcao')}")
     print(f"Estrutura: {dados.get('estrutura')}")
-    print(f"Manipulação: {dados.get('manipulacao')}")
     print(f"Liquidez: {dados.get('liquidez')}")
     print(f"Imbalance: {dados.get('imbalance')}")
-    print(f"Motivo: {dados['motivo']}")
+    print(f"Entrada: {dados.get('entrada')}")
+    print(f"Stop: {dados.get('stop')}")
+    print(f"TP: {dados.get('tp')}")
+    print(f"Motivo: {dados.get('motivo')}")
