@@ -21,24 +21,25 @@ def analisar():
         media_esq = np.mean(esquerda)
         media_dir = np.mean(direita)
 
-        # 🔹 Estrutura
+        # 🔥 ESTRUTURA
         if media_dir > media_esq:
             estrutura = "ALTA"
         else:
             estrutura = "BAIXA"
 
-        # 🔹 Liquidez
-        topo = np.min(gray)
-        fundo = np.max(gray)
+        # 🔥 LIQUIDEZ
+        topo = float(np.min(gray))
+        fundo = float(np.max(gray))
+        liquidez = abs(topo - fundo)
 
-        # 🔹 OB (zona institucional simulada)
-        ob_compra = fundo + (fundo * 0.01)
-        ob_venda = topo - (topo * 0.01)
+        # 🔥 IMBALANCE
+        imbalance = abs(media_dir - media_esq)
 
-        # 🔹 FVG (gap)
-        fvg = abs(media_dir - media_esq)
+        # 🔥 OB
+        ob_compra = fundo * 0.98
+        ob_venda = topo * 1.02
 
-        preco = np.mean(gray)
+        preco = float(np.mean(gray))
 
         # 🔥 DECISÃO
         if estrutura == "ALTA" and preco <= ob_compra:
@@ -65,10 +66,11 @@ def analisar():
             "entrada": round(entrada, 2),
             "stop": round(stop, 2),
             "tp": round(tp, 2),
+            "estrutura": estrutura,
+            "liquidez": round(liquidez, 2),
+            "imbalance": round(imbalance, 2),
             "ob_compra": round(ob_compra, 2),
             "ob_venda": round(ob_venda, 2),
-            "topo": round(topo, 2),
-            "fundo": round(fundo, 2),
             "motivo": motivo
         }
 
