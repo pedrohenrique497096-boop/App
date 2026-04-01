@@ -1,78 +1,63 @@
-from PIL import Image
-import numpy as np
-import os
+import MetaTrader5 as mt5
+import pandas as pd
 
 def analisar():
-    print("Analisando com IA institucional PRO...")
 
-    try:
-        base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        caminho = os.path.join(base_dir, "data", "Foto.jpg")
+    print("Conectando ao MT5...")
 
-        img = Image.open(caminho).convert("RGB")
-        img_array = np.array(img)
+    if not mt5.initialize():
+        return {"erro": "Erro ao conectar MT5"}
 
-        gray = np.mean(img_array, axis=2)
-        altura, largura = gray.shape
+    symbol = "XAUUSD"
 
-        esquerda = gray[:, :largura//2]
-        direita = gray[:, largura//2:]
+    rates = mt5.copy_rates_from_pos(symbol, mt5.TIMEFRAME_M5, 0, 100)
 
-        media_esq = np.mean(esquerda)
-        media_dir = np.mean(direita)
+    if rates is None:
+        return {"erro": "Erro ao pegar dados"}
 
-        # 🔥 ESTRUTURA
-        if media_dir > media_esq:
-            estrutura = "ALTA"
-        else:
-            estrutura = "BAIXA"
+    df = pd.DataFrame(rates)
 
-        # 🔥 LIQUIDEZ
-        topo = float(np.min(gray))
-        fundo = float(np.max(gray))
-        liquidez = abs(topo - fundo)
+    # ===============================
+    # 🔹 ESTRUTURA (BOS)
+    # ===============================
+    high = df['high']
+    low = df['low']
 
-        # 🔥 IMBALANCE
-        imbalance = abs(media_dir - media_esq)
+    if high.iloc[-1] > high.iloc[-5]:
+        estrutura = "ALTA"
+    else:
+        estrutura = "BAIXA"
 
-        # 🔥 OB
-        ob_compra = fundo * 0.98
-        ob_venda = topo * 1.02
+    # ===============================
+    # 🔹 LIQUIDEZ
+    # ===============================
+    topo = high.max()
+    fundo = low.min()
 
-        preco = float(np.mean(gray))
+    # ===============================
+    # 🔹 PREÇO ATUAL
+    # ===============================
+    preco = df['close'].iloc[-1]
 
-        # 🔥 DECISÃO
-        if estrutura == "ALTA" and preco <= ob_compra:
-            direcao = "BUY"
-            entrada = preco
-            stop = fundo
-            tp = entrada + (entrada - stop) * 2
-            motivo = "OB + tendência de alta"
+    # ===============================
+    # 🔹 DECISÃO
+    # ===============================
+    if estrutura == "ALTA":
+        direcao = "BUY"
+        entrada = preco
+        stop = fundo
+        tp = entrada + (entrada - stop) * 2
 
-        elif estrutura == "BAIXA" and preco >= ob_venda:
-            direcao = "SELL"
-            entrada = preco
-            stop = topo
-            tp = entrada - (stop - entrada) * 2
-            motivo = "OB + tendência de baixa"
+    else:
+        direcao = "SELL"
+        entrada = preco
+        stop = topo
+        tp = entrada - (stop - entrada) * 2
 
-        else:
-            direcao = "NEUTRO"
-            entrada = stop = tp = 0
-            motivo = "Sem entrada"
-
-        return {
-            "direcao": direcao,
-            "entrada": round(entrada, 2),
-            "stop": round(stop, 2),
-            "tp": round(tp, 2),
-            "estrutura": estrutura,
-            "liquidez": round(liquidez, 2),
-            "imbalance": round(imbalance, 2),
-            "ob_compra": round(ob_compra, 2),
-            "ob_venda": round(ob_venda, 2),
-            "motivo": motivo
-        }
-
-    except Exception as e:
-        return {"erro": str(e)}
+    return {
+        "direcao": direcao,
+        "entrada": round(entrada, 2),
+        "stop": round(stop, 2),
+        "tp": round(tp, 2),
+        "estrutura": estrutura
+    }
