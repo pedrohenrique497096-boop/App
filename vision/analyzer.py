@@ -1,63 +1,67 @@
-import MetaTrader5 as mt5
-import pandas as pd
+import os
 
 def analisar():
 
-    print("Conectando ao MT5...")
+    modo = "mobile"  # 🔥 muda pra "mt5" no notebook
 
-    if not mt5.initialize():
-        return {"erro": "Erro ao conectar MT5"}
+    if modo == "mt5":
+        try:
+            import MetaTrader5 as mt5
+            import pandas as pd
 
-    symbol = "XAUUSD"
+            print("Modo MT5 (real)")
 
-    rates = mt5.copy_rates_from_pos(symbol, mt5.TIMEFRAME_M5, 0, 100)
+            if not mt5.initialize():
+                return {"erro": "Erro ao conectar MT5"}
 
-    if rates is None:
-        return {"erro": "Erro ao pegar dados"}
+            symbol = "XAUUSD"
+            rates = mt5.copy_rates_from_pos(symbol, mt5.TIMEFRAME_M5, 0, 100)
 
-    df = pd.DataFrame(rates)
+            df = pd.DataFrame(rates)
 
-    # ===============================
-    # 🔹 ESTRUTURA (BOS)
-    # ===============================
-    high = df['high']
-    low = df['low']
+            preco = df['close'].iloc[-1]
+            high = df['high'].max()
+            low = df['low'].min()
 
-    if high.iloc[-1] > high.iloc[-5]:
-        estrutura = "ALTA"
-    else:
-        estrutura = "BAIXA"
+            direcao = "BUY"
+            entrada = preco
+            stop = low
+            tp = entrada + (entrada - stop) * 2
 
-    # ===============================
-    # 🔹 LIQUIDEZ
-    # ===============================
-    topo = high.max()
-    fundo = low.min()
+            return {
+                "direcao": direcao,
+                "entrada": round(entrada, 2),
+                "stop": round(stop, 2),
+                "tp": round(tp, 2),
+                "modo": "MT5 REAL"
+            }
 
-    # ===============================
-    # 🔹 PREÇO ATUAL
-    # ===============================
-    preco = df['close'].iloc[-1]
-
-    # ===============================
-    # 🔹 DECISÃO
-    # ===============================
-    if estrutura == "ALTA":
-        direcao = "BUY"
-        entrada = preco
-        stop = fundo
-        tp = entrada + (entrada - stop) * 2
+        except Exception as e:
+            return {"erro": str(e)}
 
     else:
-        direcao = "SELL"
-        entrada = preco
-        stop = topo
-        tp = entrada - (stop - entrada) * 2
+        # 🔥 MODO CELULAR (imagem)
+        from PIL import Image
+        import numpy as np
 
-    return {
-        "direcao": direcao,
-        "entrada": round(entrada, 2),
-        "stop": round(stop, 2),
-        "tp": round(tp, 2),
-        "estrutura": estrutura
-    }
+        print("Modo MOBILE (imagem)")
+
+        try:
+            base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            caminho = os.path.join(base_dir, "data", "Foto.jpg")
+
+            img = Image.open(caminho).convert("RGB")
+            gray = np.mean(np.array(img), axis=2)
+
+            preco = float(np.mean(gray))
+
+            return {
+                "direcao": "BUY",
+                "entrada": round(preco, 2),
+                "stop": round(preco - 10, 2),
+                "tp": round(preco + 20, 2),
+                "modo": "SIMULAÇÃO MOBILE"
+            }
+
+        except Exception as e:
+            return {"erro": str(e)}
