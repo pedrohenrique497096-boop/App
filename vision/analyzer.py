@@ -5,17 +5,18 @@ def analisar():
     print("Analisando imagem do gráfico...")
 
     try:
-        # CAMINHO CORRETO DO SEU PROJETO
-        caminho = "/storage/emulated/0/Download/App-main (4)/App-main/data/grafico.png"
+        # AGORA USANDO Foto.jpg
+        caminho = "/storage/emulated/0/Download/App-main (4)/App-main/data/Foto.jpg"
 
         img = Image.open(caminho)
+        img = img.convert("RGB")  # garante formato correto
         img_array = np.array(img)
 
         altura, largura, _ = img_array.shape
 
         print(f"Imagem carregada: {largura}x{altura}")
 
-        # análise simples (base)
+        # análise simples
         media_cor = img_array.mean()
 
         if media_cor > 120:
