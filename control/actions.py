@@ -1,5 +1,6 @@
 def executar(dados):
     print("\n===== DECISÃO DA IA =====")
+    print(f"Modo: {dados.get('modo')}")
     print(f"Direção: {dados.get('direcao')}")
     print(f"Estrutura: {dados.get('estrutura')}")
     print(f"Liquidez: {dados.get('liquidez')}")
