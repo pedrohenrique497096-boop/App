@@ -1,33 +1,38 @@
+import cv2
+
 def analisar():
-    print("Analisando estrutura avançada...")
+    print("Analisando imagem do gráfico...")
 
-    # SIMULAÇÃO (depois será gráfico real)
-    dados = {
-        "tendencia": "ALTA",
-        "topo_anterior": 2050,
-        "fundo_anterior": 2000,
-        "preco_atual": 2030,
-        "liquidez_varrida": True
-    }
+    try:
+        img = cv2.imread("data/grafico.png")
 
-    # lógica mais inteligente
-    if dados["tendencia"] == "ALTA" and dados["liquidez_varrida"]:
-        direcao = "BUY"
-        entrada = dados["preco_atual"]
-        stop = dados["fundo_anterior"]
-        tp = dados["topo_anterior"]
-        motivo = "Tendência de alta + liquidez varrida"
-    else:
-        direcao = "SELL"
-        entrada = dados["preco_atual"]
-        stop = dados["topo_anterior"]
-        tp = dados["fundo_anterior"]
-        motivo = "Possível reversão"
+        altura, largura, _ = img.shape
 
-    return {
-        "direcao": direcao,
-        "entrada": entrada,
-        "stop": stop,
-        "tp": tp,
-        "motivo": motivo
-    }
+        print(f"Imagem carregada: {largura}x{altura}")
+
+        # análise simples (base)
+        media_cor = img.mean()
+
+        if media_cor > 100:
+            direcao = "BUY"
+            motivo = "Imagem clara (simulação de alta)"
+        else:
+            direcao = "SELL"
+            motivo = "Imagem escura (simulação de queda)"
+
+        return {
+            "direcao": direcao,
+            "entrada": 0,
+            "stop": 0,
+            "tp": 0,
+            "motivo": motivo
+        }
+
+    except:
+        return {
+            "direcao": "NEUTRO",
+            "entrada": 0,
+            "stop": 0,
+            "tp": 0,
+            "motivo": "Erro ao ler imagem"
+        }
