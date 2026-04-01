@@ -1,30 +1,27 @@
-import cv2
+from PIL import Image
+import numpy as np
 
 def analisar():
     print("Analisando imagem do gráfico...")
 
     try:
-        # CAMINHO DIRETO NO CELULAR
         caminho = "/storage/emulated/0/ia-trading-vision/data/grafico.png"
 
-        img = cv2.imread(caminho)
+        img = Image.open(caminho)
+        img_array = np.array(img)
 
-        if img is None:
-            raise Exception("Imagem não encontrada")
-
-        altura, largura, _ = img.shape
+        altura, largura, _ = img_array.shape
 
         print(f"Imagem carregada: {largura}x{altura}")
 
-        # análise simples (base)
-        media_cor = img.mean()
+        media_cor = img_array.mean()
 
-        if media_cor > 100:
+        if media_cor > 120:
             direcao = "BUY"
-            motivo = "Imagem clara (simulação de alta)"
+            motivo = "Imagem clara (possível alta)"
         else:
             direcao = "SELL"
-            motivo = "Imagem escura (simulação de queda)"
+            motivo = "Imagem escura (possível queda)"
 
         return {
             "direcao": direcao,
