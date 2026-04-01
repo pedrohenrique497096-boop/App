@@ -1,26 +1,23 @@
 import matplotlib.pyplot as plt
 
 def desenhar(dados):
+    try:
+        x = list(range(50))
+        y = [i + (i % 5) for i in x]
 
-    plt.figure(figsize=(10,5))
+        plt.figure()
 
-    # simulação de gráfico
-    x = list(range(50))
-    y = [i + (i%5)*2 for i in x]
+        plt.plot(x, y)
 
-    plt.plot(x, y)
+        if dados["direcao"] != "NEUTRO":
+            plt.axhline(dados["entrada"], linestyle="--", label="Entrada")
+            plt.axhline(dados["stop"], color="red", label="Stop")
+            plt.axhline(dados["tp"], color="green", label="TP")
 
-    # 🔥 DESENHOS DA IA
-    if dados["direcao"] != "NEUTRO":
+        plt.legend()
+        plt.title("IA Trading")
 
-        plt.axhline(dados["entrada"], linestyle="--", label="Entrada")
-        plt.axhline(dados["stop"], linestyle="--", color="red", label="Stop")
-        plt.axhline(dados["tp"], linestyle="--", color="green", label="TP")
+        plt.show()
 
-        plt.axhline(dados["ob_compra"], linestyle=":", color="green", label="OB Compra")
-        plt.axhline(dados["ob_venda"], linestyle=":", color="red", label="OB Venda")
-
-    plt.legend()
-    plt.title("Shark Black Institutional")
-
-    plt.show()
+    except Exception as e:
+        print("Erro ao desenhar gráfico:", e)
