@@ -15,9 +15,8 @@ def desenhar(dados):
             plt.axhline(dados["tp"], color="green", label="TP")
 
         plt.legend()
-        plt.title("IA Trading")
+        plt.title("Shark Black Institutional")
 
-        # 🔥 SALVAR EM VEZ DE MOSTRAR
         caminho = os.path.join(os.getcwd(), "grafico_resultado.png")
         plt.savefig(caminho)
 
