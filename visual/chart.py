@@ -1,12 +1,12 @@
 import matplotlib.pyplot as plt
+import os
 
 def desenhar(dados):
     try:
         x = list(range(50))
         y = [i + (i % 5) for i in x]
 
-        plt.figure()
-
+        plt.figure(figsize=(10,5))
         plt.plot(x, y)
 
         if dados["direcao"] != "NEUTRO":
@@ -17,7 +17,13 @@ def desenhar(dados):
         plt.legend()
         plt.title("IA Trading")
 
-        plt.show()
+        # 🔥 SALVAR EM VEZ DE MOSTRAR
+        caminho = os.path.join(os.getcwd(), "grafico_resultado.png")
+        plt.savefig(caminho)
+
+        print(f"\n📊 Gráfico salvo em: {caminho}")
+
+        plt.close()
 
     except Exception as e:
         print("Erro ao desenhar gráfico:", e)
