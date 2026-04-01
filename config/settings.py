@@ -1,0 +1,2 @@
+TIMEFRAME = "M5"
+ATIVO = "XAUUSD"
