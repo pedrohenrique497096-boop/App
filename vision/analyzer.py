@@ -5,7 +5,8 @@ def analisar():
     print("Analisando imagem do gráfico...")
 
     try:
-        caminho = "/storage/emulated/0/ia-trading-vision/data/grafico.png"
+        # CAMINHO CORRETO DO SEU PROJETO
+        caminho = "/storage/emulated/0/Download/App-main (4)/App-main/data/grafico.png"
 
         img = Image.open(caminho)
         img_array = np.array(img)
@@ -14,6 +15,7 @@ def analisar():
 
         print(f"Imagem carregada: {largura}x{altura}")
 
+        # análise simples (base)
         media_cor = img_array.mean()
 
         if media_cor > 120:
