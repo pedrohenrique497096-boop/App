@@ -1,9 +1,9 @@
 from vision.analyzer import analisar
 from control.actions import executar
+from generate_tv_script import gerar_script
 
-def main():
-    resultado = analisar()
-    executar(resultado)
+dados = analisar()
+executar(dados)
 
-if __name__ == "__main__":
-    main()
+if dados.get("direcao") != "NEUTRO":
+    gerar_script(dados)
