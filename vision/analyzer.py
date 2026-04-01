@@ -3,7 +3,7 @@ import numpy as np
 import os
 
 def analisar():
-    print("Analisando com lógica institucional completa...")
+    print("Analisando com IA institucional PRO...")
 
     try:
         base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -12,95 +12,65 @@ def analisar():
         img = Image.open(caminho).convert("RGB")
         img_array = np.array(img)
 
-        altura, largura, _ = img_array.shape
-        print(f"Imagem carregada: {largura}x{altura}")
-
-        # ===============================
-        # 🔹 CONVERTER PARA ESCALA CINZA
-        # ===============================
         gray = np.mean(img_array, axis=2)
+        altura, largura = gray.shape
 
-        # ===============================
-        # 🔹 DIVIDIR EM PARTES (AMD)
-        # ===============================
-        terco = largura // 3
-        esquerda = gray[:, :terco]
-        meio = gray[:, terco:2*terco]
-        direita = gray[:, 2*terco:]
+        esquerda = gray[:, :largura//2]
+        direita = gray[:, largura//2:]
 
         media_esq = np.mean(esquerda)
-        media_meio = np.mean(meio)
         media_dir = np.mean(direita)
 
-        # ===============================
-        # 🔹 AMD (Manipulação)
-        # ===============================
-        manipulacao = media_meio < media_esq and media_meio < media_dir
+        # 🔹 Estrutura
+        if media_dir > media_esq:
+            estrutura = "ALTA"
+        else:
+            estrutura = "BAIXA"
 
-        # ===============================
-        # 🔹 LIQUIDEZ (simplificado)
-        # ===============================
+        # 🔹 Liquidez
         topo = np.min(gray)
         fundo = np.max(gray)
 
-        sweep = abs(media_esq - media_dir) > 5
+        # 🔹 OB (zona institucional simulada)
+        ob_compra = fundo + (fundo * 0.01)
+        ob_venda = topo - (topo * 0.01)
 
-        # ===============================
-        # 🔹 BOS / CHOCH (estrutura)
-        # ===============================
-        if media_dir > media_esq:
-            estrutura = "BOS_ALTA"
-        elif media_dir < media_esq:
-            estrutura = "BOS_BAIXA"
-        else:
-            estrutura = "LATERAL"
+        # 🔹 FVG (gap)
+        fvg = abs(media_dir - media_esq)
 
-        # ===============================
-        # 🔹 EQUAL HIGH / LOW (simples)
-        # ===============================
-        equal_zone = abs(topo - fundo) < 2
+        preco = np.mean(gray)
 
-        # ===============================
-        # 🔹 FVG / IMBALANCE (simples)
-        # ===============================
-        desequilibrio = abs(media_esq - media_dir) > 10
-
-        # ===============================
-        # 🔹 DECISÃO FINAL (SMC)
-        # ===============================
-        if manipulacao and estrutura == "BOS_ALTA" and desequilibrio:
+        # 🔥 DECISÃO
+        if estrutura == "ALTA" and preco <= ob_compra:
             direcao = "BUY"
-            motivo = "AMD + BOS Alta + Imbalance"
-        elif manipulacao and estrutura == "BOS_BAIXA" and desequilibrio:
+            entrada = preco
+            stop = fundo
+            tp = entrada + (entrada - stop) * 2
+            motivo = "OB + tendência de alta"
+
+        elif estrutura == "BAIXA" and preco >= ob_venda:
             direcao = "SELL"
-            motivo = "AMD + BOS Baixa + Imbalance"
-        elif sweep and estrutura == "BOS_ALTA":
-            direcao = "BUY"
-            motivo = "Liquidity Sweep + Continuação"
-        elif sweep and estrutura == "BOS_BAIXA":
-            direcao = "SELL"
-            motivo = "Liquidity Sweep + Queda"
+            entrada = preco
+            stop = topo
+            tp = entrada - (stop - entrada) * 2
+            motivo = "OB + tendência de baixa"
+
         else:
             direcao = "NEUTRO"
-            motivo = "Sem confluência institucional"
+            entrada = stop = tp = 0
+            motivo = "Sem entrada"
 
         return {
             "direcao": direcao,
-            "entrada": 0,
-            "stop": 0,
-            "tp": 0,
-            "motivo": motivo,
-            "estrutura": estrutura,
-            "manipulacao": manipulacao,
-            "liquidez": sweep,
-            "imbalance": desequilibrio
+            "entrada": round(entrada, 2),
+            "stop": round(stop, 2),
+            "tp": round(tp, 2),
+            "ob_compra": round(ob_compra, 2),
+            "ob_venda": round(ob_venda, 2),
+            "topo": round(topo, 2),
+            "fundo": round(fundo, 2),
+            "motivo": motivo
         }
 
     except Exception as e:
-        return {
-            "direcao": "NEUTRO",
-            "entrada": 0,
-            "stop": 0,
-            "tp": 0,
-            "motivo": f"Erro: {str(e)}"
-    }
+        return {"erro": str(e)}
