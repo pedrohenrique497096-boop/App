@@ -4,7 +4,13 @@ def analisar():
     print("Analisando imagem do gráfico...")
 
     try:
-        img = cv2.imread("data/grafico.png")
+        # CAMINHO DIRETO NO CELULAR
+        caminho = "/storage/emulated/0/ia-trading-vision/data/grafico.png"
+
+        img = cv2.imread(caminho)
+
+        if img is None:
+            raise Exception("Imagem não encontrada")
 
         altura, largura, _ = img.shape
 
@@ -28,11 +34,11 @@ def analisar():
             "motivo": motivo
         }
 
-    except:
+    except Exception as e:
         return {
             "direcao": "NEUTRO",
             "entrada": 0,
             "stop": 0,
             "tp": 0,
-            "motivo": "Erro ao ler imagem"
+            "motivo": f"Erro: {str(e)}"
         }
