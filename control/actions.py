@@ -4,3 +4,4 @@ def executar(dados):
     print(f"Entrada: {dados['entrada']}")
     print(f"Stop: {dados['stop']}")
     print(f"Take Profit: {dados['tp']}")
+    print(f"Motivo: {dados['motivo']}")
