@@ -1,77 +1,67 @@
-import os
+import MetaTrader5 as mt5
+import pandas as pd
 
 def analisar():
 
-    modo = "mt5"  # 🔥 AGORA É REAL
+    print("Modo MT5 (SMC PRO)")
 
-    if modo == "mt5":
-        try:
-            import MetaTrader5 as mt5
-            import pandas as pd
+    if not mt5.initialize():
+        return {"erro": "Erro MT5"}
 
-            print("Modo MT5 (real)")
+    symbol = "XAUUSDm"
+    rates = mt5.copy_rates_from_pos(symbol, mt5.TIMEFRAME_M5, 0, 200)
 
-            if not mt5.initialize():
-                return {"erro": "Erro ao conectar MT5"}
+    df = pd.DataFrame(rates)
 
-            symbol = "XAUUSDm"  # 🔥 CORRETO
-            rates = mt5.copy_rates_from_pos(symbol, mt5.TIMEFRAME_M5, 0, 100)
+    # 🔥 PREÇO ATUAL
+    preco = df['close'].iloc[-1]
 
-            if rates is None or len(rates) == 0:
-                return {"erro": "Sem dados do MT5"}
+    # 🔥 ESTRUTURA (BOS)
+    topo_anterior = df['high'].iloc[-20:-1].max()
+    fundo_anterior = df['low'].iloc[-20:-1].min()
 
-            df = pd.DataFrame(rates)
+    if preco > topo_anterior:
+        estrutura = "BOS_ALTA"
+    elif preco < fundo_anterior:
+        estrutura = "BOS_BAIXA"
+    else:
+        estrutura = "RANGE"
 
-            preco = df['close'].iloc[-1]
-            high = df['high'].max()
-            low = df['low'].min()
+    # 🔥 LIQUIDEZ
+    liquidez_topo = df['high'].rolling(10).max().iloc[-1]
+    liquidez_fundo = df['low'].rolling(10).min().iloc[-1]
 
-            # 🔥 ESTRUTURA
-            if df['close'].iloc[-1] > df['close'].iloc[-20]:
-                estrutura = "ALTA"
-            else:
-                estrutura = "BAIXA"
+    # 🔥 IMBALANCE (FVG SIMPLES)
+    fvg = abs(df['close'].iloc[-1] - df['open'].iloc[-1])
 
-            # 🔥 LIQUIDEZ
-            liquidez = abs(high - low)
+    # 🔥 DECISÃO SMC
+    if estrutura == "BOS_ALTA" and preco < liquidez_topo:
+        direcao = "BUY"
+        entrada = preco
+        stop = liquidez_fundo
+        tp = liquidez_topo
+        motivo = "BOS + Liquidez"
 
-            # 🔥 IMBALANCE (força)
-            imbalance = abs(df['close'].iloc[-1] - df['open'].iloc[-1])
-
-            # 🔥 DECISÃO
-            if estrutura == "ALTA" and imbalance > 0.2:
-                direcao = "BUY"
-                entrada = preco
-                stop = low
-                tp = entrada + (entrada - stop) * 2
-                motivo = "Tendência + força"
-
-            elif estrutura == "BAIXA" and imbalance > 0.2:
-                direcao = "SELL"
-                entrada = preco
-                stop = high
-                tp = entrada - (stop - entrada) * 2
-                motivo = "Queda + força"
-
-            else:
-                direcao = "NEUTRO"
-                entrada = stop = tp = 0
-                motivo = "Sem força"
-
-            return {
-                "direcao": direcao,
-                "entrada": round(entrada, 2),
-                "stop": round(stop, 2),
-                "tp": round(tp, 2),
-                "estrutura": estrutura,
-                "liquidez": round(liquidez, 2),
-                "imbalance": round(imbalance, 2),
-                "motivo": motivo,
-                "modo": "MT5 REAL"
-            }
-
-        except Exception as e:
-            return {"erro": str(e)}
+    elif estrutura == "BOS_BAIXA" and preco > liquidez_fundo:
+        direcao = "SELL"
+        entrada = preco
+        stop = liquidez_topo
+        tp = liquidez_fundo
+        motivo = "BOS + Liquidez"
 
     else:
-        return {"erro": "Modo inválido"}
+        direcao = "NEUTRO"
+        entrada = stop = tp = 0
+        motivo = "Sem estrutura"
+
+    return {
+        "direcao": direcao,
+        "entrada": round(entrada, 2),
+        "stop": round(stop, 2),
+        "tp": round(tp, 2),
+        "estrutura": estrutura,
+        "liquidez": round(liquidez_topo - liquidez_fundo, 2),
+        "imbalance": round(fvg, 2),
+        "motivo": motivo,
+        "modo": "SMC PRO"
+    }
