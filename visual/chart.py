@@ -2,27 +2,22 @@ import matplotlib.pyplot as plt
 import os
 
 def desenhar(dados):
-    try:
-        x = list(range(50))
-        y = [i + (i % 5) for i in x]
 
-        plt.figure(figsize=(10,5))
-        plt.plot(x, y)
+    x = list(range(100))
+    y = [i + (i % 7) for i in x]
 
-        if dados["direcao"] != "NEUTRO":
-            plt.axhline(dados["entrada"], linestyle="--", label="Entrada")
-            plt.axhline(dados["stop"], color="red", label="Stop")
-            plt.axhline(dados["tp"], color="green", label="TP")
+    plt.figure(figsize=(12,6))
+    plt.plot(x, y)
 
-        plt.legend()
-        plt.title("Shark Black Institutional")
+    if dados["direcao"] != "NEUTRO":
+        plt.axhline(dados["entrada"], linestyle="--", label="Entrada")
+        plt.axhline(dados["stop"], linestyle="--", label="Stop")
+        plt.axhline(dados["tp"], linestyle="--", label="TP")
 
-        caminho = os.path.join(os.getcwd(), "grafico_resultado.png")
-        plt.savefig(caminho)
+    plt.title("Shark Black Institutional AI")
+    plt.legend()
 
-        print(f"\n📊 Gráfico salvo em: {caminho}")
+    caminho = os.path.join(os.getcwd(), "grafico_resultado.png")
+    plt.savefig(caminho)
 
-        plt.close()
-
-    except Exception as e:
-        print("Erro ao desenhar gráfico:", e)
+    print(f"\n📊 Gráfico salvo em: {caminho}")
