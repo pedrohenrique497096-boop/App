@@ -5,11 +5,16 @@ def analisar():
 
     print("Modo MT5 (SMC PRO)")
 
-    if not mt5.initialize():
-        return {"erro": "Erro MT5"}
+    # 🔥 CONEXÃO COM MT5 (CAMINHO FORÇADO)
+    if not mt5.initialize(path="C:\\Program Files\\MetaTrader 5\\terminal64.exe"):
+        return {"erro": "Erro ao conectar MT5"}
 
     symbol = "XAUUSDm"
+
     rates = mt5.copy_rates_from_pos(symbol, mt5.TIMEFRAME_M5, 0, 200)
+
+    if rates is None or len(rates) == 0:
+        return {"erro": "Sem dados do MT5"}
 
     df = pd.DataFrame(rates)
 
@@ -31,10 +36,10 @@ def analisar():
     liquidez_topo = df['high'].rolling(10).max().iloc[-1]
     liquidez_fundo = df['low'].rolling(10).min().iloc[-1]
 
-    # 🔥 IMBALANCE (FVG SIMPLES)
+    # 🔥 IMBALANCE (FORÇA)
     fvg = abs(df['close'].iloc[-1] - df['open'].iloc[-1])
 
-    # 🔥 DECISÃO SMC
+    # 🔥 DECISÃO INTELIGENTE
     if estrutura == "BOS_ALTA" and preco < liquidez_topo:
         direcao = "BUY"
         entrada = preco
@@ -51,7 +56,9 @@ def analisar():
 
     else:
         direcao = "NEUTRO"
-        entrada = stop = tp = 0
+        entrada = 0
+        stop = 0
+        tp = 0
         motivo = "Sem estrutura"
 
     return {
