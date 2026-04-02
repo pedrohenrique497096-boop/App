@@ -2,7 +2,7 @@ import os
 
 def analisar():
 
-    modo = "mobile"  # 🔥 depois no notebook muda pra "mt5"
+    modo = "mt5"  # 🔥 AGORA É REAL
 
     if modo == "mt5":
         try:
@@ -14,8 +14,11 @@ def analisar():
             if not mt5.initialize():
                 return {"erro": "Erro ao conectar MT5"}
 
-            symbol = "XAUUSD"
+            symbol = "XAUUSDm"  # 🔥 CORRETO
             rates = mt5.copy_rates_from_pos(symbol, mt5.TIMEFRAME_M5, 0, 100)
+
+            if rates is None or len(rates) == 0:
+                return {"erro": "Sem dados do MT5"}
 
             df = pd.DataFrame(rates)
 
@@ -23,77 +26,31 @@ def analisar():
             high = df['high'].max()
             low = df['low'].min()
 
-            direcao = "BUY"
-            entrada = preco
-            stop = low
-            tp = entrada + (entrada - stop) * 2
-
-            return {
-                "direcao": direcao,
-                "entrada": round(entrada, 2),
-                "stop": round(stop, 2),
-                "tp": round(tp, 2),
-                "estrutura": "REAL",
-                "liquidez": round(high - low, 2),
-                "imbalance": 0,
-                "motivo": "Dados reais MT5",
-                "modo": "MT5 REAL"
-            }
-
-        except Exception as e:
-            return {"erro": str(e)}
-
-    else:
-        # 🔥 MODO MOBILE PRO
-        from PIL import Image
-        import numpy as np
-
-        print("Modo MOBILE PRO (imagem)")
-
-        try:
-            base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-            caminho = os.path.join(base_dir, "data", "Foto.jpg")
-
-            img = Image.open(caminho).convert("RGB")
-            gray = np.mean(np.array(img), axis=2)
-
-            altura, largura = gray.shape
-
-            esquerda = gray[:, :largura//2]
-            direita = gray[:, largura//2:]
-
-            media_esq = np.mean(esquerda)
-            media_dir = np.mean(direita)
-
             # 🔥 ESTRUTURA
-            if media_dir > media_esq:
+            if df['close'].iloc[-1] > df['close'].iloc[-20]:
                 estrutura = "ALTA"
             else:
                 estrutura = "BAIXA"
 
             # 🔥 LIQUIDEZ
-            topo = float(np.min(gray))
-            fundo = float(np.max(gray))
-            liquidez = abs(topo - fundo)
+            liquidez = abs(high - low)
 
-            # 🔥 IMBALANCE
-            imbalance = abs(media_dir - media_esq)
-
-            preco = float(np.mean(gray))
+            # 🔥 IMBALANCE (força)
+            imbalance = abs(df['close'].iloc[-1] - df['open'].iloc[-1])
 
             # 🔥 DECISÃO
-            if estrutura == "ALTA" and imbalance > 2:
+            if estrutura == "ALTA" and imbalance > 0.2:
                 direcao = "BUY"
                 entrada = preco
-                stop = preco - 10
-                tp = preco + 20
+                stop = low
+                tp = entrada + (entrada - stop) * 2
                 motivo = "Tendência + força"
 
-            elif estrutura == "BAIXA" and imbalance > 2:
+            elif estrutura == "BAIXA" and imbalance > 0.2:
                 direcao = "SELL"
                 entrada = preco
-                stop = preco + 10
-                tp = preco - 20
+                stop = high
+                tp = entrada - (stop - entrada) * 2
                 motivo = "Queda + força"
 
             else:
@@ -110,8 +67,11 @@ def analisar():
                 "liquidez": round(liquidez, 2),
                 "imbalance": round(imbalance, 2),
                 "motivo": motivo,
-                "modo": "MOBILE PRO"
+                "modo": "MT5 REAL"
             }
 
         except Exception as e:
             return {"erro": str(e)}
+
+    else:
+        return {"erro": "Modo inválido"}
