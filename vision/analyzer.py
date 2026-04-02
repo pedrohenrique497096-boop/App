@@ -1,14 +1,13 @@
 import MetaTrader5 as mt5
 import pandas as pd
-import numpy as np
-import time
 
 SYMBOL = "XAUUSDm"
 CANDLES = 500
 
-LAST_SIGNAL = {"dir": None, "time": 0}
 
-
+# =========================
+# 🔌 CONEXÃO MT5
+# =========================
 def connect():
     return mt5.initialize()
 
@@ -17,74 +16,59 @@ def get_data(tf):
     rates = mt5.copy_rates_from_pos(SYMBOL, tf, 0, CANDLES)
     if rates is None:
         return None
-    df = pd.DataFrame(rates)
-    return df
+    return pd.DataFrame(rates)
 
 
 # =========================
-# 🔥 STRUCTURE (BOS / CHOCH)
+# 📊 ESTRUTURA (BOS / TREND)
 # =========================
 def structure(df):
     highs = df["high"].values
     lows = df["low"].values
 
-    hh = highs[-1] > highs[-5]
-    ll = lows[-1] < lows[-5]
-
-    if hh and not ll:
+    if highs[-1] > highs[-5]:
         return "ALTA", "BOS"
-    elif ll and not hh:
+    elif lows[-1] < lows[-5]:
         return "BAIXA", "BOS"
     else:
         return "RANGE", "NONE"
 
 
 # =========================
-# 🔥 EQUAL HIGH / LOW
+# 💧 LIQUIDEZ (SWEEP)
 # =========================
-def equal_levels(df):
-    h1, h2 = df["high"].iloc[-1], df["high"].iloc[-2]
-    l1, l2 = df["low"].iloc[-1], df["low"].iloc[-2]
+def liquidity(df):
+    last = df.iloc[-1]
 
-    eqh = abs(h1 - h2) < 1.0
-    eql = abs(l1 - l2) < 1.0
+    if last["low"] < df["low"].iloc[-5] and last["close"] > last["low"]:
+        return "SSL_SWEEP"
 
-    return eqh, eql
+    if last["high"] > df["high"].iloc[-5] and last["close"] < last["high"]:
+        return "BSL_SWEEP"
+
+    return "NONE"
 
 
 # =========================
-# 🔥 FVG + IFVG
+# 📉 FVG
 # =========================
 def fvg(df):
     c1 = df.iloc[-3]
     c3 = df.iloc[-1]
 
     if c3["low"] > c1["high"]:
-        return "BULL", c3["low"], c1["high"]
+        return "BULL"
 
     if c3["high"] < c1["low"]:
-        return "BEAR", c1["low"], c3["high"]
-
-    return "NONE", 0, 0
-
-
-def ifvg(df):
-    c1 = df.iloc[-3]
-    c3 = df.iloc[-1]
-
-    if c3["close"] < c1["high"]:
-        return "IFVG_BEAR"
-
-    if c3["close"] > c1["low"]:
-        return "IFVG_BULL"
+        return "BEAR"
 
     return "NONE"
 
 
 # =========================
-# 🔥 ORDER BLOCKS (OB/BB/MB/RB)
+# 📦 ORDER BLOCK (simples)
 # =========================
-def order_blocks(df):
+def order_block(df):
     last = df.iloc[-2]
 
     if last["close"] < last["open"]:
@@ -96,95 +80,14 @@ def order_blocks(df):
     return "NONE"
 
 
-def breaker_block(df):
-    if df["close"].iloc[-1] > df["high"].iloc[-5]:
-        return "BULL_BREAKER"
-    if df["close"].iloc[-1] < df["low"].iloc[-5]:
-        return "BEAR_BREAKER"
-    return "NONE"
-
-
-def mitigation_block(df):
-    if df["close"].iloc[-1] == df["open"].iloc[-1]:
-        return "MITIGATION"
-    return "NONE"
-
-
-def rejection_block(df):
-    candle = df.iloc[-1]
-    body = abs(candle["close"] - candle["open"])
-    wick = candle["high"] - candle["low"]
-
-    if wick > body * 3:
-        return "REJECTION"
-    return "NONE"
-
-
 # =========================
-# 🔥 LIQUIDITY
-# =========================
-def liquidity(df):
-    high = df["high"].iloc[-1]
-    low = df["low"].iloc[-1]
-
-    if high > df["high"].iloc[-5] and df["close"].iloc[-1] < high:
-        return "BSL_SWEEP"
-
-    if low < df["low"].iloc[-5] and df["close"].iloc[-1] > low:
-        return "SSL_SWEEP"
-
-    return "NONE"
-
-
-# =========================
-# 🔥 RANGE / IRL / ERL
-# =========================
-def range_liquidity(df):
-    high = df["high"].max()
-    low = df["low"].min()
-
-    mid = (high + low) / 2
-
-    price = df["close"].iloc[-1]
-
-    if price > mid:
-        return "ERL"
-    else:
-        return "IRL"
-
-
-# =========================
-# 🔥 LIQUIDITY VOID / IMBALANCE
-# =========================
-def imbalance(df):
-    return abs(df["close"].iloc[-1] - df["open"].iloc[-1])
-
-
-def liquidity_void(df):
-    if abs(df["high"].iloc[-1] - df["low"].iloc[-1]) > 20:
-        return "LV"
-    return "NONE"
-
-
-# =========================
-# 🔥 MAIN ANALYSIS
+# 🎯 ANALISE POR TF
 # =========================
 def analyze_tf(df):
-    trend, bos = structure(df)
-    eqh, eql = equal_levels(df)
-    fvg_type, fvg_top, fvg_bot = fvg(df)
-    ifvg_type = ifvg(df)
-
-    ob = order_blocks(df)
-    bb = breaker_block(df)
-    mb = mitigation_block(df)
-    rb = rejection_block(df)
-
+    trend, _ = structure(df)
     liq = liquidity(df)
-    rl = range_liquidity(df)
-
-    imb = imbalance(df)
-    lv = liquidity_void(df)
+    fvg_type = fvg(df)
+    ob = order_block(df)
 
     score_buy = 0
     score_sell = 0
@@ -209,78 +112,101 @@ def analyze_tf(df):
     if ob == "BEAR_OB":
         score_sell += 8
 
-    if bb == "BULL_BREAKER":
-        score_buy += 10
-    if bb == "BEAR_BREAKER":
-        score_sell += 10
-
-    if rb == "REJECTION":
-        score_sell += 5
-
-    if imb > 10:
-        score_buy += 5
-        score_sell += 5
-
-    # decisão
-    if score_buy > score_sell and score_buy > 30:
+    if score_buy > score_sell and score_buy > 25:
         direction = "BUY"
-    elif score_sell > score_buy and score_sell > 30:
+    elif score_sell > score_buy and score_sell > 25:
         direction = "SELL"
     else:
         direction = "NEUTRO"
 
-    price = df["close"].iloc[-1]
-
     return {
         "direction": direction,
         "score_buy": score_buy,
-        "score_sell": score_sell,
-        "price": price
+        "score_sell": score_sell
     }
 
 
 # =========================
-# 🔥 FINAL
+# 🔥 MODO SNIPER
 # =========================
 def analisar():
     if not connect():
-        return {"erro": "Erro MT5"}
+        return {"erro": "Erro ao conectar MT5"}
 
     mt5.symbol_select(SYMBOL, True)
 
-    tfs = [
-        mt5.TIMEFRAME_D1,
-        mt5.TIMEFRAME_H1,
-        mt5.TIMEFRAME_M15,
-        mt5.TIMEFRAME_M5
-    ]
+    # =========================
+    # 🔵 DIREÇÃO H1
+    # =========================
+    df_h1 = get_data(mt5.TIMEFRAME_H1)
+    if df_h1 is None:
+        return {"erro": "Sem dados H1"}
 
-    total_buy = 0
-    total_sell = 0
+    h1 = analyze_tf(df_h1)
+    direcao_macro = h1["direction"]
 
-    for tf in tfs:
-        df = get_data(tf)
-        if df is None:
-            continue
+    if direcao_macro == "NEUTRO":
+        return {
+            "direcao": "NEUTRO",
+            "motivo": "Sem tendência H1",
+            "modo": "SNIPER"
+        }
 
-        res = analyze_tf(df)
+    # =========================
+    # 🟡 ENTRADA M5
+    # =========================
+    df_m5 = get_data(mt5.TIMEFRAME_M5)
+    if df_m5 is None:
+        return {"erro": "Sem dados M5"}
 
-        total_buy += res["score_buy"]
-        total_sell += res["score_sell"]
+    liq = liquidity(df_m5)
+    fvg_type = fvg(df_m5)
 
-    if total_buy > total_sell:
-        final = "BUY"
-    elif total_sell > total_buy:
-        final = "SELL"
-    else:
-        final = "NEUTRO"
+    price = df_m5["close"].iloc[-1]
 
-    price = res["price"]
+    # =========================
+    # 🔥 BUY
+    # =========================
+    if direcao_macro == "BUY":
 
+        if liq == "SSL_SWEEP" and fvg_type == "BULL":
+
+            stop = df_m5["low"].iloc[-2]
+            tp = price + ((price - stop) * 2)
+
+            return {
+                "direcao": "BUY",
+                "entrada": round(price, 2),
+                "stop": round(stop, 2),
+                "tp": round(tp, 2),
+                "motivo": "H1 alta + sweep + FVG",
+                "modo": "SNIPER"
+            }
+
+    # =========================
+    # 🔥 SELL
+    # =========================
+    if direcao_macro == "SELL":
+
+        if liq == "BSL_SWEEP" and fvg_type == "BEAR":
+
+            stop = df_m5["high"].iloc[-2]
+            tp = price - ((stop - price) * 2)
+
+            return {
+                "direcao": "SELL",
+                "entrada": round(price, 2),
+                "stop": round(stop, 2),
+                "tp": round(tp, 2),
+                "motivo": "H1 baixa + sweep + FVG",
+                "modo": "SNIPER"
+            }
+
+    # =========================
+    # ❌ SEM TRADE
+    # =========================
     return {
-        "direcao": final,
-        "entrada": round(price, 2),
-        "stop": round(price - 15, 2),
-        "tp": round(price + 30, 2),
-        "modo": "INSTITUCIONAL V2"
+        "direcao": "NEUTRO",
+        "motivo": "Sem confirmação sniper",
+        "modo": "SNIPER"
         }
