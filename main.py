@@ -3,5 +3,9 @@ from control.actions import executar
 from visual.chart import desenhar
 
 dados = analisar()
-executar(dados)
-desenhar(dados)
+
+if "erro" in dados:
+    print("Erro:", dados["erro"])
+else:
+    executar(dados)
+    desenhar(dados)
